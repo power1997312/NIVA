@@ -1,0 +1,46 @@
+# =====================================================================
+# 部件测试用例模板 · 布尔域 · XOR（异或门）
+# =====================================================================
+schema_version: "1.0"
+lib_version: "0.1.0"
+updated: "2026-09-10"
+source_note: "cls 取自 knowledge/symbols/boolean.yml（XOR, in 2..2，图上标注 =1）"
+
+cases:
+  - case_id: BOOL-XOR-001
+    cls: XOR
+    domain: BOOLEAN
+    applies_when:
+      params: {}
+      ports: {in: {min: 2, max: 2}, out: {min: 1, max: 1}}
+      stateful: false
+    principle: "两输入相异输出 1，相同输出 0；2 输入异或的 4 个输入组合即完整覆盖"
+    generation: enumeration
+    coverage: [equivalence_class, boundary]
+    standard_ref: "IEC 60880 §6.3"
+    step_template: |
+      1. IN1=0, IN2=0，观察 {output_tag}
+      2. IN1=0, IN2=1，观察 {output_tag}
+      3. IN1=1, IN2=0，观察 {output_tag}
+      4. IN1=1, IN2=1，观察 {output_tag}
+    expected_template: "见真值推演结果（期望依次为 0, 1, 1, 0）"
+    evidence_hint: "节点 {block_id}、两输入端口及其极性、输出端口 {out_port}"
+    safety_notes: "=1 标注（XOR）与 ≥1 标注（OR）在图面上形近，是解析易错点；本用例的步骤 4 正是区分两者的判别性用例——若步骤 4 输出 1 而非 0，说明块类型被误判为 OR。"
+
+  - case_id: BOOL-XOR-002
+    cls: XOR
+    domain: BOOLEAN
+    applies_when:
+      params: {}
+      ports: {in: {min: 2, max: 2}, out: {min: 1, max: 1}}
+      stateful: false
+    principle: "输入极性核查：XOR 对输入极性敏感，任一路取反都会改变全部真值表"
+    generation: enumeration
+    coverage: [equivalence_class, invalid_input]
+    standard_ref: "NBT 20448 / IEC 61131-3（逻辑等价形式）"
+    step_template: |
+      1. 读取并记录两输入端口各自的极性标记（signed/sign）
+      2. 按记录极性重算期望真值表并与实测比对
+    expected_template: "见真值推演结果（期望值按实际端口极性推演，不采用教科书默认正向）"
+    evidence_hint: "端口极性字段（IR port_level.nodes[].ports[].signed/sign）、p4_semantics 的 Δ 符号裁决结果"
+    safety_notes: "极性来自 p4_semantics.resolve_delta_signs 的推断，属**推断结果**而非图纸显式声明；置信不足时必须标注并转人工，不得默默按推断值生成期望。"

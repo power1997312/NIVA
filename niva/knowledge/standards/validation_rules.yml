@@ -1,0 +1,90 @@
+# =====================================================================
+# NIVA 校验规则族登记表（R1–R20）
+# =====================================================================
+# 为什么需要这份文件：
+#   SAMA-V1 的规则实现散布在 p3_ir.validate（R1–R10）与 kb_check（R11–R15），
+#   且编号存在缺口（R6/R7/R8 未启用）、注释与产出规则名不一致（p3_ir.py 曾把
+#   R9 注释成 R6）。评审时若被追问"规则是否完备"，光靠读源码无法快速回答。
+#   本表是**唯一权威清单**：每条规则的 ID / 层 / 严重度 / 实现位置 / 状态。
+#
+# 台账纪律：
+#   - 状态 implemented = 代码已实现且产出 findings；
+#   - 状态 reserved    = 编号预留给后续演进，当前不产生任何 finding；
+#   - reserved 编号**不得**被挪作他用（否则历史产物的 rule 名会失去可比性）。
+# =====================================================================
+version: "1.0"
+updated: "2026-09-10"
+
+families:
+  - id: R1-R10
+    name: 图纸 IR 结构完整性
+    owner: adapters/diagram
+    impl: niva/adapters/diagram/legacy/p3_ir.py::validate
+    note: 逐页内联执行，findings 写入 IR 的 validation 字段，工作台可点击复核
+
+  - id: R11-R15
+    name: 知识一致性（位号语法 / IO / 定值）
+    owner: adapters/diagram
+    impl: niva/adapters/diagram/legacy/kb_check.py::run_kb_validation
+    note: 需要 knowledge/io 与 knowledge/setpoints 接入；当前为占位夹具，约束力待真实数据
+
+  - id: R16-R20
+    name: 测试用例生成质量（NIVA 新增）
+    owner: services/testcase
+    impl: "(待实现 — 阶段 P3)"
+    note: 见下
+
+rules:
+  # ---------------- 图纸 IR 结构 ----------------
+  - {id: R1,  name: R1_tag_format,            severity: info,    status: implemented,
+     desc: 泡内文本应为位号/序号/显示类缩写，异常则待人工确认}
+  - {id: R2,  name: R2_chain_too_short,       severity: warning, status: implemented,
+     desc: protection 链成员少于 4 视为链过短}
+  - {id: R3,  name: "(跨页引用收集)",           severity: "-",     status: implemented,
+     desc: 收集 SH.x_x 类跨页引用；当前只收集不告警，故不出 findings}
+  - {id: R4,  name: R4_isolated,              severity: info,    status: implemented,
+     desc: 未挂接任何网的孤立符号}
+  - {id: R5,  name: R5_titleblock_missing,    severity: warning, status: implemented,
+     desc: 图签字段缺失（图名/系统号/版本/页号）}
+  - {id: R6,  name: "(预留)",                  severity: "-",     status: reserved,
+     desc: 编号预留，未启用}
+  - {id: R7,  name: "(预留)",                  severity: "-",     status: reserved,
+     desc: 编号预留，未启用}
+  - {id: R8,  name: "(预留)",                  severity: "-",     status: reserved,
+     desc: 编号预留，未启用}
+  - {id: R9,  name: R9_threshold_no_tag,      severity: warning, status: implemented,
+     desc: 阈值块绑定无 XU 位号，待人工确认}
+  - {id: R9,  name: R9_threshold_no_branch,   severity: info,    status: implemented,
+     desc: 阈值块有位号但无分支报警标签（同一编号下的第二条规则）}
+  - {id: R10, name: R10_summer_zero,          severity: info,    status: implemented,
+     desc: 求和器恒零告警——同一信号同时驱动 + 与 − 端口}
+
+  # ---------------- 知识一致性 ----------------
+  - {id: R11, name: R11_tag_not_in_io,                   severity: error,  status: implemented,
+     desc: 位号不在 IO 清单中}
+  - {id: R12, name: "(图集级：IO 点未使用)",                severity: "-",    status: reserved,
+     desc: 需图集级上下文，当前未启用}
+  - {id: R13, name: R13_setpoint_out_of_range,           severity: critical, status: implemented,
+     desc: 定值超出被测信号 IO 量程}
+  - {id: R14, name: R14_missing_setpoint,                severity: info,   status: implemented,
+     desc: 缺少对应定值记录}
+  - {id: R15, name: R15_unit_conflict,                   severity: error,  status: implemented,
+     desc: 定值单位冲突}
+
+  # ---------------- 用例生成质量（NIVA 新增）----------------
+  - {id: R16, name: R16_path_case_coverage,   severity: error, status: planned,
+     desc: 逻辑路径用例覆盖校验——每条可测路径至少一条用例}
+  - {id: R17, name: R17_step_matches_skeleton, severity: error, status: planned,
+     desc: 用例步骤与模板骨架一致——LLM 不得增删步骤（步骤对齐比对）}
+  - {id: R18, name: R18_setpoint_hit,         severity: error, status: planned,
+     desc: 用例定值命中定值库；未命中则槽位标注"待补定值"}
+  - {id: R19, name: R19_tag_grammar_valid,    severity: error, status: planned,
+     desc: 用例涉及的位号须符合位号文法}
+  - {id: R20, name: R20_narrative_evidence,   severity: error, status: planned,
+     desc: LLM 说明逐断言带证据指针；缺证据即拒收}
+
+summary:
+  implemented: 13    # 含 R9 同号两条、R3 收集型
+  reserved: 4        # R6/R7/R8/R12
+  planned: 5         # R16–R20（P3 阶段）
+  total_numbered: 20

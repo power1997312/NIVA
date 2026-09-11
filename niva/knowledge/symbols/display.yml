@@ -1,0 +1,57 @@
+# =====================================================================
+# SAMA 图符字典 · 显示/信息类（不参与控制流）
+# =====================================================================
+version: "1.0.0"
+updated: "2026-08-25"
+entries:
+  - cls: RECORDER
+    pat: '^QR$'
+    in: {domain: A, min: 1, max: 4}
+    out: A
+    exec: "记录"
+    display: true
+    standard_ref: "记录仪"
+
+  - cls: RECORDER_R
+    pat: '^R$'
+    in: {domain: A, min: 1, max: 4}
+    out: A
+    exec: "记录"
+    display: true
+    standard_ref: "记录仪(R)"
+
+  - cls: ANNUNCIATOR
+    pat: '^BI$|^ALARM$|^报警$'
+    in: {domain: B, min: 1, max: 8}
+    out: B
+    exec: "报警窗"
+    display: true
+    aliases: ["BI", "光字牌"]
+    standard_ref: "报警窗（K3 报警扇出的终端显示类）"
+
+  - cls: INDICATOR
+    pat: '^LI$|^I$|^INDICATOR$|^指示$'
+    in: {domain: A, min: 1, max: 2}
+    out: A
+    exec: "指示"
+    display: true
+    aliases: ["LI", "指示表"]
+    standard_ref: "指示"
+
+  - cls: IDA_STATION
+    pat: '^IDA$'
+    in: {domain: A, min: 1, max: 2}
+    out: A
+    exec: "ID A 操作站"
+    aliases: ["IDA"]
+    standard_ref: "圆泡内芯细分：操作站（样本 P5 实证 IDA）"
+
+  # ↓ 保持旧 bool_dict 全局序：CURRENT_I 原为全字典最后一条。
+  #   synth_gen 按条目顺序构建采样池，顺序是合成回归分布的一部分，
+  #   平移时不得改变（K-Step1 实战教训：错位曾致 roundtrip 漂移）。
+  - cls: CURRENT_I
+    pat: '^CURRENT_I$|^4-20$'
+    in: {domain: A, min: 1, max: 1}
+    out: A
+    exec: "OUT := 4-20mA(IN)"
+    standard_ref: "4-20mA 电流接口（圆泡内芯细分，L2 检出器扩展用）"

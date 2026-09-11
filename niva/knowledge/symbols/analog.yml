@@ -1,0 +1,162 @@
+# =====================================================================
+# SAMA 图符字典 · 模拟量域 (ANALOG)
+# SSOT 来源：bool_dict.py 平移（2026-08-25，行为零变化重构 K-Step1）
+# 变更纪律：新增符号只加条目；修改 pat 视同语法变更，须跑 tests/kb_parity.py
+# 字段约定：
+#   cls       语义类（schema/sama_ir_v1.1.json 的语义类枚举）
+#   pat       标签匹配正则（match 语义，锚定开头；空白归一后匹配）
+#   in        {domain: A|B, min: n, max: n|null(无界)}   —— 端口基数区间 C2
+#   out       输出域 A|B
+#   stateful  true=状态元件(Z⁻¹)，回环断环点             （缺省 false）
+#   display   true=显示/信息类，不参与控制流              （缺省 false）
+#   param     参数化标签（如 VOTE_KN 的 k/n）
+#   aliases   同一原语的绘图变体（仅文档用途，pat 才是匹配事实源）
+#   standard_ref  知识出处（SAMA 标准条款 / 设计院图册编号）
+# =====================================================================
+version: "1.0.0"
+updated: "2026-08-25"
+entries:
+  - cls: SUMMER
+    pat: '^Δ$|^SUM$|^K\+$|^SUMMER$'
+    in: {domain: A, min: 2, max: 4}
+    out: A
+    exec: "OUT := Σ sᵢ·INᵢ"
+    aliases: ["Δ", "Σ", "SUM"]
+    standard_ref: "SAMA 求和器惯例；端口 ± 极性由 p4_semantics.resolve_delta_signs 几何解析"
+
+  # ↓ 两个阈值监控是 A→B 域转换块；按旧 bool_dict 全局序放在此处
+  #   （synth_gen 按条目顺序做 rng.choice，顺序即合成测试分布的一部分）
+  - cls: HI_MONITOR
+    pat: '^H/$|^>$|^HIGH$|^HI_MONITOR$'
+    in: {domain: A, min: 1, max: 2}
+    out: B
+    exec: "OUT := IN > LIMIT"
+    aliases: ["H/", "高限监控"]
+    standard_ref: "阈值监控=域转换点(A→B)，其输出必为网级源；定值绑定键 (tag,block,branch) 见 K-Step3"
+
+  - cls: LO_MONITOR
+    pat: '^/L$|^<$|^LOW$|^LO_MONITOR$'
+    in: {domain: A, min: 1, max: 2}
+    out: B
+    exec: "OUT := IN < LIMIT"
+    aliases: ["/L", "低限监控"]
+    standard_ref: "同 HI_MONITOR"
+
+  - cls: FUNC
+    pat: '^(F|f)\(x\)$'
+    in: {domain: A, min: 1, max: 2}
+    out: A
+    exec: "OUT := f(IN)"
+    aliases: ["F(x)", "f(x)", "函数发生器"]
+    standard_ref: "SAMA 函数块；折点参数表待定值手册接入（K-Step3）"
+
+  - cls: SELECT_MAX
+    pat: '^MAX2?$|^MAX$|^SELECT_MAX$'
+    in: {domain: A, min: 2, max: null}
+    out: A
+    exec: "OUT := max(IN[*])"
+    aliases: ["MAX2", "高选"]
+    standard_ref: "SAMA 高选块"
+
+  - cls: ISOL
+    pat: '^ISOL$'
+    in: {domain: A, min: 1, max: 1}
+    out: A
+    exec: "OUT := ISOLATE(IN)"
+    standard_ref: "隔离组件"
+
+  - cls: IM
+    pat: '^IM$|^ISOL_MOD$'
+    in: {domain: A, min: 1, max: 1}
+    out: A
+    exec: "OUT := ISOLATE(IN)"
+    aliases: ["IM", "隔离模块"]
+    standard_ref: "隔离模块（样本 P1 实证：IM→A/D 点线端头留白 6–9pt 绘图惯例）"
+
+  - cls: AD
+    pat: '^A/D$'
+    in: {domain: A, min: 1, max: 1}
+    out: A
+    exec: "OUT := DIGITIZE(IN)"
+    standard_ref: "模数转换；分配母线驱动者判据见 p2_pipeline bus_driver 规则"
+
+  - cls: DA
+    pat: '^D/A$'
+    in: {domain: A, min: 1, max: 1}
+    out: A
+    exec: "OUT := ANALOGIZE(IN)"
+    standard_ref: "数模转换；执行级输出"
+
+  - cls: IP
+    pat: '^I/P$'
+    in: {domain: A, min: 1, max: 1}
+    out: A
+    exec: "OUT := PNEUMATIC(IN)"
+    standard_ref: "电-气转换（执行器前级）"
+
+  - cls: SWITCH_T
+    pat: '^T$|^SWITCH$'
+    in: {domain: A, min: 3, max: 3}
+    out: A
+    exec: "OUT := SEL(C, A, B)"
+    standard_ref: "三输入切换块（样本 P5 实证）"
+
+  - cls: TRACK
+    pat: '^TR$|^TRACK$'
+    in: {domain: A, min: 1, max: 1}
+    out: A
+    exec: "OUT := IN (Z⁻¹ 跟踪)"
+    stateful: true
+    standard_ref: "跟踪块；回环网方向裁决的状态元件仲裁依据"
+
+  - cls: GAIN
+    pat: '^K$|^GAIN$'
+    in: {domain: A, min: 1, max: 1}
+    out: A
+    exec: "OUT := K·IN"
+    standard_ref: "增益块"
+
+  - cls: HI_LIMIT
+    pat: '^≯$|^HI_LIMIT$'
+    in: {domain: A, min: 1, max: 1}
+    out: A
+    exec: "OUT := min(IN, HI)"
+    aliases: ["≯"]
+    standard_ref: "上限限幅"
+
+  - cls: LO_LIMIT
+    pat: '^≮$|^LO_LIMIT$'
+    in: {domain: A, min: 1, max: 1}
+    out: A
+    exec: "OUT := max(IN, LO)"
+    aliases: ["≮"]
+    standard_ref: "下限限幅"
+
+  - cls: SWITCH_RL
+    pat: '^R/L$|^RL$|^SWITCH_RL$'
+    in: {domain: A, min: 3, max: 3}
+    out: A
+    exec: "OUT := SEL(rem/local)"
+    standard_ref: "远方/就地切换"
+
+  - cls: SELECT_W
+    pat: '^W$'
+    in: {domain: A, min: 2, max: null}
+    out: A
+    exec: "OUT := weighted(IN[*])"
+    standard_ref: "加权选择"
+
+  - cls: DC
+    pat: '^D/C$'
+    in: {domain: A, min: 1, max: 1}
+    out: A
+    exec: "OUT := D/C convert(IN)"
+
+  - cls: PID_STACK
+    pat: '.*∫.*|^INT$|^d∫dt$|^PID_STACK$'
+    in: {domain: A, min: 3, max: 3}
+    out: A
+    exec: "OUT := LIMIT(K·ERR + ∫ERR dt + dERR/dt)"
+    stateful: true
+    aliases: ["d∫dt", "∫dt", "PID"]
+    standard_ref: "PID 复合块（merge_stacked 纵向合并产物）；积分时间等参数待定值手册接入（K-Step3）"

@@ -1,0 +1,183 @@
+# =====================================================================
+# NIVA 统一阈值与权重表（Thresholds SSOT）
+# =====================================================================
+# 定位：本文件是整合后系统**唯一的数值判据来源**。任何阈值/权重不得在
+#       业务代码里硬编码（架构方案 §4 契约设计要点第三条）。
+#
+# 来源与纪律：
+#   - doc.*      逐项取自 Trace_NL/config.py L155–194 与
+#                core/candidate_discovery.py L74–88，默认值与既有实现完全一致；
+#                env_override 保留原环境变量名，保证单变量 A/B 实验能力不丢失。
+#   - diagram.*  取自 SAMA-V1/p2_pipeline.py L153 _BASIS_RANK。
+#   - bridge.*   / testcase.* 为 NIVA 新增，取架构方案 §5.1 / §5.2 的设计值。
+#
+# 【红线】修改本文件中 doc.* 的任何一项，都等同于变更判定链行为，
+#         必须重跑 experiments/regression.py 金标回归（字符级颜色一致率）。
+# =====================================================================
+version: "1.0"
+updated: "2026-09-10"
+
+# ---------------------------------------------------------------------
+# 文档域：微块匹配判定树（Trace_NL）
+# ---------------------------------------------------------------------
+doc:
+  # 顶层分类门槛
+  exact_char:            {value: 0.92, env_override: TRACE_NL_TH_EXACT_CHAR}
+  embedding_exact:       {value: 0.95, env_override: TRACE_NL_TH_EMB_EXACT}
+  embedding_semantic:    {value: 0.70, env_override: TRACE_NL_TH_EMB_SEM}
+  embedding_unmatched:   {value: 0.50, env_override: TRACE_NL_TH_EMB_UNMATCHED}
+  nli_entailment:        {value: 0.85, env_override: TRACE_NL_TH_NLI_ENTAIL}
+  nli_neutral_embedding: {value: 0.80, env_override: TRACE_NL_TH_NLI_NEUTRAL_EMB}
+
+  # Stage 2a — GREEN 路径2
+  green_path2_char_jaccard: {value: 0.88, env_override: TRACE_NL_TH_G_P2_CHARJ}
+  green_path2_lcs:          {value: 0.80, env_override: TRACE_NL_TH_G_P2_LCS}
+  green_len_ratio:          {value: 0.70, env_override: TRACE_NL_TH_G_LENRATIO}
+  green_fast_maxlen:        {value: 10.0, env_override: TRACE_NL_TH_G_FASTLEN}
+  green_fallback_embed:     {value: 0.85, env_override: TRACE_NL_TH_G_FB_EMBED}
+  green_fallback_minlen:    {value: 4.0,  env_override: TRACE_NL_TH_G_FB_MINLEN}
+  green_fallback_rawratio:  {value: 0.50, env_override: TRACE_NL_TH_G_FB_RAWRATIO}
+
+  # Stage 2b — NLI 语义验证
+  nli_contradiction:        {value: 0.80, env_override: TRACE_NL_TH_NLI_CONTRA}
+  blue_nli_char_jaccard:    {value: 0.50, env_override: TRACE_NL_TH_B_NLI_CHARJ}
+  nli_neutral:              {value: 0.80, env_override: TRACE_NL_TH_NLI_NEUTRAL}
+  blue_neutral_char_jaccard: {value: 0.50, env_override: TRACE_NL_TH_B_NEU_CHARJ}
+
+  # Stage 2c — 高嵌入回退 BLUE（无需 NLI）
+  blue_2c_embed:         {value: 0.85, env_override: TRACE_NL_TH_B2C_EMBED}
+  blue_2c_lcs:           {value: 0.55, env_override: TRACE_NL_TH_B2C_LCS}
+  blue_2c_char_jaccard:  {value: 0.60, env_override: TRACE_NL_TH_B2C_CHARJ}
+
+  # Stage 2d — 中等嵌入 + 高字符重叠 → BLUE
+  blue_2d_embed:         {value: 0.75, env_override: TRACE_NL_TH_B2D_EMBED}
+  blue_2d_char_jaccard:  {value: 0.55, env_override: TRACE_NL_TH_B2D_CHARJ}
+  blue_2d_lcs:           {value: 0.45, env_override: TRACE_NL_TH_B2D_LCS}
+
+  # 微块设置
+  min_phrase_length:     {value: 4}
+  max_embedding_seq_length: {value: 512}
+
+  # 候选发现层（无表内容召回）— core/candidate_discovery.py L74–88
+  discovery:
+    weights:
+      sem:     {value: 0.5}   # 语义通道
+      contain: {value: 0.2}   # 包含通道
+      idf:     {value: 0.2}   # 稀有词通道
+      tfidf:   {value: 0.1}   # 词汇通道
+    theta_accept:            {value: 0.45}
+    ambiguous_margin:        {value: 0.05}
+    max_relations:           {value: 3}
+    secondary_ratio:         {value: 0.85}
+    anchor_gate:             {value: 0.30}   # 锚点门控阈值（固定尺度归一化后）
+    anchor_boost:            {value: 0.50}   # 锚点门控加成系数
+    anchor_scale:            {value: 0.10}   # 锚点固定尺度：原始分/此值 → [0,1]
+    section_penalty:         {value: 0.85}
+    fold_delta:              {value: 0.05}
+    recall_k:                {value: 15}
+    class_mismatch_penalty:  {value: 0.30}   # 分级互斥惩罚（对象不同，内容再像也降权）
+
+# ---------------------------------------------------------------------
+# 图形域：有向边依据强度（SAMA-V1 p2_pipeline._BASIS_RANK）
+# 数值越大越强；用于 annotation 收缩时取"较弱依据"以及方向裁决优先级链。
+# ---------------------------------------------------------------------
+diagram:
+  basis_rank:
+    io_source:       3
+    io_source_top:   3
+    bus_driver:      3
+    arrow:           3
+    stroke_arrow:    3
+    bus_fanout:      3
+    net_bridge:      2
+    stateful_loop:   2
+    port_side:       2
+    zone_flow:       2
+    io_sink:         2
+    ambiguous:       1
+  default_basis_rank: {value: 2}   # 未登记依据的兜底强度
+  # 端点三规则与母线判定（nets.py / p2_pipeline.py 实测常量，仅登记备查）
+  port_snap_max_pt:   {value: 18.0}   # 端口 8 锚点吸附距离上限（pt）
+  bus_min_span_pt:    {value: 200.0}  # 母线最小跨度（pt）
+  bus_min_dots:       {value: 2}      # 母线最小圆点数
+
+# ---------------------------------------------------------------------
+# 跨域图文锚定（Bridge）— 架构方案 §5.1
+# 融合规则沿用 Trace_NL 已验证的"门控加法"：强信号独立抬升，不被弱信号稀释。
+# ---------------------------------------------------------------------
+bridge:
+  base_weights:
+    semantic:  {value: 0.45}
+    tag:       {value: 0.25}
+    ref:       {value: 0.15}   # 图号 / 回路号命中
+    struct:    {value: 0.15}   # 结构一致性
+  tag_gate:      {value: 0.30}  # 位号重合率 ≥ 此值 → 触发门控加法
+  tag_boost:     {value: 0.50}  # 门控加成系数
+  accept:        {value: 0.45}  # 接受阈值（与 doc 域保持一致，不引入新调参负担）
+  ambiguous_margin: {value: 0.05}
+  # 降级判据：位号重合率低于此值时退化为"仅语义模式"并在报告中显式标注
+  degrade_tag_rate: {value: 0.30}
+
+# ---------------------------------------------------------------------
+# 测试用例生成引擎（TCG）— 架构方案 §5.2
+# 【红线】本节的判据类阈值（expect_*）只允许确定性算法消费；
+#         大模型不得读取、不得覆盖、不得改写其产出。
+# ---------------------------------------------------------------------
+testcase:
+  # 模板匹配分层检索的打分排序键权重
+  match_scores:
+    cls_exact:        {value: 100.0}
+    cls_family:       {value: 60.0}
+    port_signature:   {value: 30.0}
+    coverage_richness: {value: 10.0}
+  # 硬冲突一票否决：端口基数不兼容、域不一致、stateful 不一致
+  hard_conflict_veto: {value: true}
+
+  # 真值推演
+  truth:
+    boolean_full_enum_max_inputs: {value: 6}   # 输入端口数 ≤ 6 时全枚举 2^n
+    sampling_equivalence_classes: {value: 8}   # 超出后按等价类 + 边界抽样
+    setpoint_epsilon_ratio:       {value: 0.02}  # 边界值激励取定值 ±ε，ε = ratio × 定值
+
+  # LLM 语义成文的三层校验（任一失败即回退模板文案）
+  narrate:
+    schema_validate:   {value: true}
+    expected_must_equal_truth: {value: true}   # 期望值必须逐项等于真值推演结果
+    entities_must_exist_in_ir: {value: true}   # 提到的位号必须存在于 IR
+
+# ---------------------------------------------------------------------
+# 编排层：置信度四级处置（架构方案 §4.10）
+# 写入代码而非文档承诺。
+# ---------------------------------------------------------------------
+orchestration:
+  confidence_tiers:
+    auto_confirm:     {value: 0.85}
+    assisted_review:  {value: 0.60}
+    force_human:      {value: 0.60}   # ＜ 此值强制转人工
+    top1_min_score:   {value: 0.45}   # 候选第一名低于此值 → 强制转人工，不给肯定结论
+  min_human_audit_ratio: {value: 0.10}   # 自动确认档仍保留不低于 10% 人工抽检
+  circuit_breaker:
+    max_degrade_ratio:   {value: 0.10}   # 单批次降级条目占比上限
+    max_parse_fail_ratio: {value: 0.30}  # 单批次解析失败率上限
+
+# ---------------------------------------------------------------------
+# LLM 网关
+# ---------------------------------------------------------------------
+llm:
+  timeout_s:            {value: 120, env_override: TRACE_NL_LLM_TIMEOUT}
+  max_workers:          {value: 8}
+  max_retry:            {value: 2}
+  max_tokens:           {value: 2000}
+  max_tokens_cap:       {value: 8000}
+  temperature:          {value: 0.1}    # 裁决任务低温度保证稳定
+  auto_confirm:         {value: 0.85}
+  opinion_min:          {value: 0.60}
+  ds_max_chars:         {value: 1500}
+  cand_max_chars:       {value: 900}
+  untraced_cands:       {value: 5}
+  default_cands:        {value: 3}
+  # 引用回验：LLM 返回的每条"证据"须经程序级逐字子串匹配，
+  # 未命中即判为幻觉 → 该条结论降级并强制转人工。
+  citation_verify:
+    enabled: {value: true}
+    normalization: {value: "strip_ws_punct"}   # 归一化后再比对

@@ -1,0 +1,48 @@
+# =====================================================================
+# 部件用例库 · 语义族映射（families）
+# =====================================================================
+# 定位：模板检索的"同族回退"依据。当图纸上的块类型在库中**没有精确命中**时，
+#       先回退到同族模板（语义方向一致），仍无则走通用探针兜底并显著标注。
+#
+# 为什么族映射放数据不放代码：
+#   新增块类型/模板时只改本文件，不改检索算法（知识变更不触发代码变更）。
+# =====================================================================
+version: "1.0"
+updated: "2026-09-10"
+
+families:
+  threshold_monitor:
+    desc: 阈值监视/限幅（模拟→布尔转换点，定值绑定的落点）
+    members: [HI_MONITOR, LO_MONITOR, HI_LIMIT, LO_LIMIT]
+    # 方向提示：同族内 HI/LO 方向不同属于**半兼容**，匹配时必须降级并显式警示
+    direction_groups:
+      high: [HI_MONITOR, HI_LIMIT]
+      low:  [LO_MONITOR, LO_LIMIT]
+
+  boolean_logic:
+    desc: 组合逻辑
+    members: [AND, OR, NOT, XOR]
+
+  vote:
+    desc: k/n 表决（核保护高频，独立成族以便优先精确命中）
+    members: [VOTE_KN]
+
+  stateful:
+    desc: 带状态元件（需时序激励，组合枚举只能近似）
+    members: [SR, RESET]
+
+  analog_math:
+    desc: 模拟量运算
+    members: [SUMMER, GAIN, FUNC, PID_STACK]
+
+  analog_select:
+    desc: 模拟量选择/切换
+    members: [SELECT_MAX, SELECT_MIN, SELECT_W, SWITCH_T, SWITCH_RL, TRACK]
+
+  io:
+    desc: 信号输入输出与隔离
+    members: [AD, DA, ISOL, IP, DC, IM]
+
+  interface:
+    desc: 人机接口与记录
+    members: [BUP, DISPLAY_I, RECORDER_R, ALARM_A]

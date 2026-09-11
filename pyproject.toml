@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "niva"
+version = "0.1.0"
+description = "NIVA — 核电仪控智能验证与追溯智能体（Trace_NL × SAMA-V1 整合）"
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+license = { text = "Proprietary" }
+
+# 依赖治理纪律（架构方案 §8.3）：
+#   - 取两个原工程需求的交集并锁版本，兼容性优先；
+#   - scipy 必须存在：缺失时 Trace_NL 会**静默**退化为贪心匹配，
+#     结果与金标不一致却不报错 —— 这是最难排查的一类故障。
+#   - 刻意不引入 jsonschema / openai / langgraph 等重型组件（克制选型）。
+dependencies = [
+    "pymupdf>=1.24.9",
+    "pdfplumber>=0.11",
+    "openpyxl>=3.1",
+    "pandas>=2.0",
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "requests>=2.31",
+    "PyYAML>=6.0",
+    "pillow>=10.0",
+    "networkx>=3.0",
+    "streamlit>=1.30",
+]
+
+[project.optional-dependencies]
+# 本地语义模型（BGE 嵌入 + NLI 蕴含精判）。缺失时系统降级为纯规则模式。
+models = ["torch>=2.0", "transformers>=4.40"]
+dev = ["pytest>=7.4"]
+
+[tool.setuptools]
+packages = ["niva"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q"

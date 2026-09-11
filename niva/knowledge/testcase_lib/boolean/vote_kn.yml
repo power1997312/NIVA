@@ -1,0 +1,58 @@
+# =====================================================================
+# 部件测试用例模板 · 布尔域 · VOTE_KN（k/n 表决器）
+# =====================================================================
+# 【为什么这是第一批最高优先级】
+#   核反应堆保护系统的核心机制就是表决（2oo3 / 2oo4）。保护逻辑中
+#   "至少 k 个通道越限即触发停堆" 的判据，直接对应 VOTE_KN。
+#   它的测试是核安全审评最关注的一类：既要验证正确动作，也要验证
+#   **单通道故障不致误动/拒动**（单一故障准则）。
+#
+# 【占位纪律】模板不含任何数值：k/n 从图纸实际参数取，期望值由真值推演
+#   对 2^n 输入组合前向求值产生。LLM 仅可改写措辞，不得触碰数值。
+# =====================================================================
+schema_version: "1.0"
+lib_version: "0.1.0"
+updated: "2026-09-10"
+source_note: "cls 取自 knowledge/symbols/boolean.yml（VOTE_KN, param: kn）"
+
+cases:
+  - case_id: BOOL-VOTE_KN-001
+    cls: VOTE_KN
+    domain: BOOLEAN
+    applies_when:
+      params: {k: "*", n: "*"}
+      ports: {in: {min: 2, max: null}, out: {min: 1, max: 1}}
+      stateful: false
+    principle: "{n} 取 {k} 表决器：n 路输入中至少 k 路为 1 时输出为 1；k-1 路为 1 时输出必须为 0"
+    generation: enumeration
+    coverage: [boundary, equivalence_class]
+    standard_ref: "IEC 60880 §6.3（软件需求与测试覆盖）/ NBT 20448 §7.2（追溯与验证）"
+    step_template: |
+      1. 置 {n} 路输入中的 {k_minus_1} 路为 1，其余为 0
+      2. 观察 {output_tag} 输出
+      3. 将第 {k} 路输入由 0 置为 1
+      4. 再次观察 {output_tag} 输出
+    expected_template: "见真值推演结果（步骤 2 期望 0；步骤 4 期望 1）"
+    evidence_hint: "图纸节点 {block_id} 的 params.k/params.n、输入端口清单 {in_ports}、输出端口 {out_port}、IR 页号与包围盒"
+    safety_notes: "边界组合（恰好 k-1 与恰好 k）必须成对出现，只测其一不构成对表决阈值的验证。"
+
+  - case_id: BOOL-VOTE_KN-002
+    cls: VOTE_KN
+    domain: BOOLEAN
+    applies_when:
+      params: {k: "*", n: "*"}
+      ports: {in: {min: 2, max: null}, out: {min: 1, max: 1}}
+      stateful: false
+    principle: "单一故障准则验证：任一单通道输入故障（固定 0 或固定 1）时，表决输出的正确性边界"
+    generation: enumeration
+    coverage: [single_failure, fault_tolerance, independence]
+    standard_ref: "HAD 102/02 单一故障准则 / IEC 61513 §6.2（系统级 V&V）"
+    step_template: |
+      1. 将通道 i 输入固定为 {stuck_value}，其余 {n_minus_1} 路按使输出为 1 的组合配置
+      2. 观察 {output_tag} 输出是否为 1（容错能力）
+      3. 将通道 i 输入固定为 {stuck_value}，其余 {n_minus_1} 路按使输出为 0 的组合配置
+      4. 观察 {output_tag} 输出是否为 0（不误动）
+      5. 对 i = 1..{n} 逐通道重复
+    expected_template: "见真值推演结果（逐通道枚举，每组输入组合的期望输出由前向求值给出）"
+    evidence_hint: "输入通道清单 {in_ports}（对应图纸各支路位号）、表决参数 {k}/{n}、通道至端口的映射依据"
+    safety_notes: "本模板验证的是『表决逻辑对单通道失效的容忍度』，不等价于硬件通道独立性鉴定（后者属 GB/T 12727 硬件鉴定范围）。报告中不得混同。"

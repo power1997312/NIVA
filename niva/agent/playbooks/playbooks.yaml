@@ -1,0 +1,157 @@
+# =====================================================================
+# NIVA 剧本库（Playbook）
+# =====================================================================
+# 定位：把标准意图固化为预评审的任务 DAG。**命中剧本时直接查表执行，
+#       完全不经过大模型规划**——"规则优先、LLM 兜底"在编排层的体现。
+#
+# 字段约定：
+#   steps[].args 中的占位符：
+#       {param}      ← 用户参数（planner 抽取）
+#       ${step.路径}  ← 前序步骤结果字段（如 ${build.matrix_id}）
+#   steps[].gate: true   阶段门控——该步失败则**不推进**后续步骤
+#   steps[].optional: true  失败不阻断（如 LLM 裁决不可用）
+#   steps[].scope  必须与工具注册的 scope 一致，执行器经受限视图调用，
+#                  越域即 GATE_REJECTED（作用域边界在剧本层再守一道）。
+#
+# available 由 playbook.py 依据"本剧本引用的工具是否全部已实现"**自动判定**，
+# 不在此手填 —— 避免文档与代码漂移。
+# =====================================================================
+version: "1.0"
+updated: "2026-09-10"
+
+playbooks:
+  # -------------------------------------------------------------------
+  - id: PB1
+    name: 需求追溯核查
+    intent: req_trace
+    trigger:
+      strong: [追溯矩阵, 追溯核查, 需求追溯, 逆向矩阵, 正向矩阵, 追溯关系]
+      keywords: [追溯, 矩阵, 需求, 核查, 比对, 溯源]
+    params:
+      required: [downstream_pdf, upstream_pdfs]
+      optional:
+        mode: hybrid
+    steps:
+      - id: parse
+        scope: doc
+        tool: parse_requirement_doc
+        args: {pdf_path: "{downstream_pdf}"}
+      - id: build
+        scope: doc
+        tool: build_trace_matrix
+        gate: true
+        args: {downstream_pdf: "{downstream_pdf}", upstream_pdfs: "{upstream_pdfs}",
+               mode: "{mode}"}
+      - id: verify
+        scope: doc
+        tool: verify_trace
+        gate: true
+        args: {matrix_id: "${build.matrix_id}"}
+      - id: adjudicate
+        scope: doc
+        tool: adjudicate_ambiguity
+        optional: true          # 未配 LLM 时自动降级，不阻断
+        args: {matrix_id: "${build.matrix_id}"}
+      - id: export
+        scope: doc
+        tool: export_matrix_excel
+        args: {matrix_id: "${build.matrix_id}"}
+
+  # -------------------------------------------------------------------
+  - id: PB3
+    name: 测试用例生成
+    intent: testcase_gen
+    trigger:
+      strong: [生成测试用例, 测试用例生成, 用例生成, 出用例, 生成用例]
+      keywords: [测试用例, 用例, 部件测试, 定值验证]
+    params:
+      required: [page]
+      optional:
+        use_llm: true
+        unit_kind: null
+    steps:
+      - id: extract
+        scope: generate
+        tool: extract_logic_paths
+        args: {page: "{page}", unit_kind: "{unit_kind}"}
+      - id: match
+        scope: generate
+        tool: match_component_library
+        args: {page: "{page}"}
+      - id: generate
+        scope: generate
+        tool: generate_test_case
+        gate: true
+        args: {page: "{page}", use_llm: "{use_llm}", unit_kind: "{unit_kind}"}
+      - id: render
+        scope: generate
+        tool: render_test_doc
+        args: {case_set_id: "${generate.case_set_id}", fmt: xlsx}
+
+  # -------------------------------------------------------------------
+  - id: PB2
+    name: 图文一致性核查（SAMA/FD ↔ 组态）
+    intent: xdiff
+    trigger:
+      strong: [设计图与组态图, 图文一致性, 同构比对, 设计组态比对, 组态核查]
+      keywords: [一致性, 组态, 设计图, SAMA, FD]
+    params:
+      required: [design_ir, config_ir]
+      optional: {align_by: system_code}
+    steps:
+      - id: xdiff
+        scope: graph
+        tool: xdiff_trace
+        gate: true
+        args: {design_ir: "{design_ir}", config_ir: "{config_ir}",
+               align_by: "{align_by}"}
+
+  # -------------------------------------------------------------------
+  - id: PB4
+    name: 变更影响分析
+    intent: impact_analysis
+    trigger:
+      strong: [变更影响, 影响分析, 改动影响, 变更后影响]
+      keywords: [变更, 影响, 改动, 受影响]
+    params:
+      required: [node_id]
+      optional: {change_kind: text_modify}
+    steps:
+      - id: impact
+        scope: graph
+        tool: utg_impact_analysis
+        gate: true
+        args: {node_id: "{node_id}", change_kind: "{change_kind}"}
+
+  # -------------------------------------------------------------------
+  - id: PB5
+    name: 覆盖审计
+    intent: coverage_audit
+    trigger:
+      strong: [覆盖审计, 未追溯条目, 无源用例, 覆盖率审计]
+      keywords: [覆盖, 审计, 漏项]
+    params:
+      required: [project]
+      optional: {}
+    steps:
+      - id: coverage
+        scope: graph
+        tool: utg_coverage_report
+        gate: true
+        args: {project: "{project}", include_package: true}
+
+  # -------------------------------------------------------------------
+  - id: PB6
+    name: 图纸追溯问答
+    intent: diagram_qa
+    trigger:
+      strong: [上下游路径, 信号路径, 影响哪些设备, 图纸问答, 路径归因]
+      keywords: [图纸, 路径, 上下游, 查询, 信号]
+    params:
+      required: [node]
+      optional: {direction: down, depth: 12}
+    steps:
+      - id: trace
+        scope: diagram
+        tool: trace_path
+        args: {node: "{node}", direction: "{direction}", depth: "{depth}"}

@@ -1,0 +1,43 @@
+# ---- 适配器层：原两个工程的源码由 tools/migrate_legacy.py 生成，不纳入版本控制 ----
+# 纪律：adapters/*/legacy/ 是**迁移产物**，可随时由脚本从原工程重建。
+# 把迁移产物提交进 git 会造成"同一份代码两个真身"，且原工程更新后无法察觉漂移。
+niva/adapters/doc/legacy/
+niva/adapters/diagram/legacy/
+
+# ---- 制品仓与运行留痕：可重建，不入库 ----
+artifacts/
+eval/out/
+*.snapshot.json
+
+# ---- LLM 缓存：含模型原始输出，体积不定，不入库 ----
+**/.llm_cache/
+niva/.llm_cache/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- 密钥：绝不允许入库 ----
+.env
+*.env
+!.env.example
+
+# ---- 编辑器与系统 ----
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Office 锁文件 ----
+~$*
+.~lock.*

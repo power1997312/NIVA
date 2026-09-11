@@ -1,0 +1,41 @@
+# =====================================================================
+# 标准条款映射（合规证据包的输入）
+# =====================================================================
+# 定位：把核电仪控 V&V 标准族的"条款要求"映射到本项目的可定位证据。
+#       证据类型（evidence）由 report 层解释，取值见
+#       niva/services/graph/service.py::_evidence_for_clause。
+#
+# ★ 纪律：**不虚构合规结论**。证据不存在时状态标"待补"，由人工补齐——
+#   这正是架构方案 §5.7 "规则精确查询优先" 与 §7.5 "不复制标准原文" 的要求。
+# =====================================================================
+version: "1.0"
+updated: "2026-09-10"
+note: "仅引用标准编号与通用要求，不复制标准原文（版权与合规要求，见方案 §7.5）"
+
+standards:
+  - name: "NBT 20448"
+    clauses:
+      - clause: "7.2"
+        requirement: "需求之间应建立并维护双向追溯关系，追溯关系应可审查"
+        evidence: [trace_matrix, coverage_audit]
+      - clause: "7.3"
+        requirement: "验证结果应可复现，验证记录应可追溯"
+        evidence: [reproducibility, trace_matrix]
+
+  - name: "IEC 60880"
+    clauses:
+      - clause: "6.3"
+        requirement: "软件需求应正确、完整、可验证；测试应对需求提供覆盖"
+        evidence: [test_cases, coverage_audit]
+
+  - name: "IEC 61513"
+    clauses:
+      - clause: "6.2"
+        requirement: "系统级 V&V 活动应覆盖从需求到实现的验证独立性"
+        evidence: [trace_matrix, test_cases]
+
+  - name: "IEEE 1012"
+    clauses:
+      - clause: "5.x"
+        requirement: "V&V 任务应产出可追溯的验证报告与证据"
+        evidence: [validation_rules, coverage_audit, reproducibility]

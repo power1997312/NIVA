@@ -1,0 +1,47 @@
+# =====================================================================
+# 部件测试用例模板 · 布尔域 · RESET（复位）
+# =====================================================================
+schema_version: "1.0"
+lib_version: "0.1.0"
+updated: "2026-09-10"
+source_note: "cls 取自 knowledge/symbols/boolean.yml（RESET, in 1..2）。样本 P5 实证：RESET/T/403CC 混合域。"
+
+cases:
+  - case_id: BOOL-RESET-001
+    cls: RESET
+    domain: BOOLEAN
+    applies_when:
+      params: {}
+      ports: {in: {min: 1, max: 2}, out: {min: 1, max: 1}}
+      stateful: false
+    principle: "复位有效时输出强制归零，且在复位存在期间不得被上游置位信号覆盖（复位优先性）"
+    generation: enumeration
+    coverage: [state_transition, boundary]
+    standard_ref: "IEC 60880 §6.3"
+    step_template: |
+      1. 建立使输出为 1 的前置状态
+      2. 施加复位输入为 1，观察 {output_tag}
+      3. 在复位保持为 1 的同时，施加上游置位信号，观察 {output_tag}
+      4. 撤销复位，观察 {output_tag}
+    expected_template: "见真值推演结果（步骤 2/3 期望 0；步骤 4 期望回到由上游决定的稳态）"
+    evidence_hint: "复位信号来源位号与端口、上游置位路径、节点 {block_id}"
+    safety_notes: "步骤 3 验证复位优先性。若复位期间输出被置位覆盖，将导致“复位失效”，属安全重要缺陷；本步骤不可省略。"
+
+  - case_id: BOOL-RESET-002
+    cls: RESET
+    domain: MIXED
+    applies_when:
+      params: {}
+      ports: {in: {min: 1, max: 2}, out: {min: 1, max: 1}}
+      stateful: false
+    principle: "混合域复位：复位输入来自模拟量阈值比较时，需在阈值上下界两侧各验证一次复位动作点"
+    generation: interval
+    coverage: [boundary, equivalence_class]
+    standard_ref: "IEC 60880 §6.3 / NBT 20448 §7.2"
+    step_template: |
+      1. 将复位源模拟量置于阈值下限以下（定值 − ε），确认复位未动作
+      2. 置于阈值上限以上（定值 + ε），确认复位动作
+      3. 置于阈值边界邻域内观察动作点，记录实际翻转值与标称定值的偏差
+    expected_template: "见真值推演结果（区间传播给出动作区间；ε 取定值的 {epsilon_ratio}）"
+    evidence_hint: "定值绑定记录（knowledge/setpoints 双键索引：位号 + 块）、IO 量程、阈值块 {block_id}"
+    safety_notes: "动作点实测与标称定值的偏差是**定值校验证据**，应单列入报告，供定值手册核对；本用例同时服务 R13（定值超量程）与 R18（定值命中）。"

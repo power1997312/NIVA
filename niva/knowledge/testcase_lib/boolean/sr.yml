@@ -1,0 +1,56 @@
+# =====================================================================
+# 部件测试用例模板 · 布尔域 · SR（置位复位触发器）
+# =====================================================================
+# 【为什么单独处理状态元件】
+#   SR 是 SAMA-IR 中标注 stateful: true 的元件之一，是回路中的**断环点**。
+#   它使"输出不仅取决于当前输入，还取决于历史"——因此：
+#     · 真值推演必须在 SR 处显式插 Z⁻¹ 断点（不能当作组合逻辑求值）；
+#     · 测试必须覆盖**状态迁移序列**，单点输入组合不足以验证。
+# =====================================================================
+schema_version: "1.0"
+lib_version: "0.1.0"
+updated: "2026-09-10"
+source_note: "cls 取自 knowledge/symbols/boolean.yml（SR, stateful: true, in 2..2）"
+
+cases:
+  - case_id: BOOL-SR-001
+    cls: SR
+    domain: BOOLEAN
+    applies_when:
+      params: {}
+      ports: {in: {min: 2, max: 2}, out: {min: 1, max: 1}}
+      stateful: true
+    principle: "置位保持：S=1 后输出置 1 并在 S 回 0 后保持，直至 R=1 复位"
+    generation: enumeration
+    coverage: [state_transition, boundary]
+    standard_ref: "IEC 60880 §6.3 / IEC 61131-3（双稳态功能块）"
+    step_template: |
+      1. 复位态：S=0, R=1，观察 {output_tag}（清零基线）
+      2. S=1, R=0，观察 {output_tag}（置位）
+      3. S=0, R=0，观察 {output_tag}（保持——本步骤是状态元件区别于组合逻辑的关键）
+      4. S=0, R=1，观察 {output_tag}（复位）
+      5. S=0, R=0，观察 {output_tag}（复位后保持）
+    expected_template: "见真值推演结果（含状态迁移轨迹，期望依次为 0, 1, 1, 0, 0）"
+    evidence_hint: "节点 {block_id} 的 stateful 标记、S/R 端口映射、断环点 Z⁻¹ 插入位置"
+    safety_notes: "步骤 3 是本模板的存在理由：只测组合逻辑的用例无法区分 SR 与 OR。核保护中的“报警记忆/闭锁保持”功能正是依赖此语义。"
+
+  - case_id: BOOL-SR-002
+    cls: SR
+    domain: BOOLEAN
+    applies_when:
+      params: {}
+      ports: {in: {min: 2, max: 2}, out: {min: 1, max: 1}}
+      stateful: true
+    principle: "S=R=1 同时有效的非法组合处置：必须与设计定义一致，且不得导致输出不确定或非法保持"
+    generation: enumeration
+    coverage: [invalid_input, state_transition]
+    standard_ref: "IEC 61131-3（SR/SR 优先律定义） / NBT 20448"
+    step_template: |
+      1. 先建立输出为 0 的状态（S=0,R=1）
+      2. 置 S=1, R=1，观察 {output_tag}
+      3. 保持 S=1, R=1 一段时间后再次观察 {output_tag}
+      4. 恢复 S=0, R=0，观察 {output_tag}
+      5. 重新建立输出为 1 的状态（S=1,R=0）后重复步骤 2–4
+    expected_template: "见真值推演结果（按图纸/规程定义的优先律推演；图纸未定义时判为知识缺失，转人工）"
+    evidence_hint: "S/R 端口的实际连接来源、上游是否存在互锁逻辑可排除 S=R=1、相关规程条款"
+    safety_notes: "S=R=1 的处置属**设计定义事项**，工具不得自行假定。若图纸与规程均未定义，应产出“待人工确认”项而非直接给期望值——这是诚实标注不确定性的典型场景。"

@@ -1,0 +1,74 @@
+# =====================================================================
+# 部件测试用例模板 · 模拟/阈值域 · HI_LIMIT / LO_LIMIT（阈值监视块）
+# =====================================================================
+# 【为什么这批与布尔域并列为第一批】
+#   核电保护系统的实际关注点不是模拟量的精确数值，而是"是否越过定值"。
+#   阈值块是模拟世界通向布尔世界的唯一关口，也是**定值知识唯一的落点**：
+#   k3_bind.bind_threshold_blocks 把图上的 H//L 块绑定到
+#   knowledge/setpoints 的定值记录，测试判据的数值由此而来。
+#   因此这批模板直接决定了"用例期望值是否具备工程真实性"。
+# =====================================================================
+schema_version: "1.0"
+lib_version: "0.1.0"
+updated: "2026-09-10"
+source_note: "cls 取自 knowledge/symbols/analog.yml（HI_MONITOR / LO_MONITOR / HI_LIMIT / LO_LIMIT）"
+
+cases:
+  - case_id: ANA-HI_LIMIT-001
+    cls: HI_LIMIT
+    domain: ANALOG
+    applies_when:
+      params: {hi: "*"}
+      ports: {in: {min: 1, max: 1}, out: {min: 1, max: 1}}
+      stateful: false
+    principle: "高限动作：输入越过高定值后输出置 1；在定值以下应保持 0。判据取定值 ± ε"
+    generation: interval
+    coverage: [boundary, equivalence_class]
+    standard_ref: "IEC 60880 §6.3 / NBT 20448 §7.2（定值验证）"
+    step_template: |
+      1. 输入置于定值以下（定值 − ε），观察 {output_tag}（应保持 0）
+      2. 输入缓慢上升至定值以上（定值 + ε），观察 {output_tag}（应置 1）
+      3. 记录实际翻转点，与标称定值比对偏差
+      4. 使输入回降至定值以下，观察 {output_tag} 是否返回 0（复位/回差特性）
+    expected_template: "见真值推演结果（区间传播；ε 取定值的 {epsilon_ratio}）"
+    evidence_hint: "定值来源：tag_key={tag_key} / block={block} / branch={branch} / 值={setpoint}；IO 量程；节点 {block_id}"
+    safety_notes: "若定值缺失（R14）或超出 IO 量程（R13），本用例**不得生成期望值**，应产出『待补定值』并强制转人工——宁可缺用例，不可给错判据。"
+
+  - case_id: ANA-LO_LIMIT-001
+    cls: LO_LIMIT
+    domain: ANALOG
+    applies_when:
+      params: {lo: "*"}
+      ports: {in: {min: 1, max: 1}, out: {min: 1, max: 1}}
+      stateful: false
+    principle: "低限动作：输入低于低定值后输出置 1；在定值以上应保持 0。判据取定值 ± ε"
+    generation: interval
+    coverage: [boundary, equivalence_class]
+    standard_ref: "IEC 60880 §6.3 / NBT 20448 §7.2"
+    step_template: |
+      1. 输入置于定值以上（定值 + ε），观察 {output_tag}（应保持 0）
+      2. 输入下降至定值以下（定值 − ε），观察 {output_tag}（应置 1）
+      3. 记录实际翻转点并与标称定值比对偏差
+      4. 使输入回升至定值以上，观察 {output_tag} 是否返回 0
+    expected_template: "见真值推演结果（区间传播；ε 取定值的 {epsilon_ratio}）"
+    evidence_hint: "定值来源双键索引记录、IO 量程、节点 {block_id}"
+    safety_notes: "低限类定值常用于“压力过低/液位过低”等保护，与高限的保护方向相反。**绝不可复用高限模板**——方向错置会让用例判据完全失效且难以察觉。"
+
+  - case_id: ANA-HI_LIMIT-002
+    cls: HI_MONITOR
+    domain: ANALOG
+    applies_when:
+      params: {}
+      ports: {in: {min: 1, max: 1}, out: {min: 1, max: 1}}
+      stateful: false
+    principle: "分支报警标签完备性：阈值块的分支级别（L/L2/H1/H2）决定报警/保护语义，需逐分支验证"
+    generation: interval
+    coverage: [boundary, invalid_input]
+    standard_ref: "NBT 20448 / 位号文法 branch_labels（knowledge/tags/tag_grammar.yml）"
+    step_template: |
+      1. 读取该块的分支标签集合 {branch_labels}
+      2. 对每个分支的定值，分别执行高限/低限动作验证
+      3. 对无分支标签的块，标注『无分支报警标签』并转人工确认分支归属
+    expected_template: "见真值推演结果（逐分支区间传播）"
+    evidence_hint: "branch_labels、branch_meaning、定值双键索引（含 branch 字段）、R9_threshold_no_branch 检出记录"
+    safety_notes: "R9_threshold_no_branch（info 级）意味着该阈值块未声明报警级别；在核安全场景中，报警级别缺失会直接影响 HAD 102 分级审查。本模板将其从“信息级提示”升级为“必须人工确认项”。"

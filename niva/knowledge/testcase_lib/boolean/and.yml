@@ -1,0 +1,47 @@
+# =====================================================================
+# 部件测试用例模板 · 布尔域 · AND（与门）
+# =====================================================================
+schema_version: "1.0"
+lib_version: "0.1.0"
+updated: "2026-09-10"
+source_note: "cls 取自 knowledge/symbols/boolean.yml（AND, in.min=2）"
+
+cases:
+  - case_id: BOOL-AND-001
+    cls: AND
+    domain: BOOLEAN
+    applies_when:
+      params: {}
+      ports: {in: {min: 2, max: null}, out: {min: 1, max: 1}}
+      stateful: false
+    principle: "全 1 才输出 1；任一输入为 0 则输出 0"
+    generation: enumeration
+    coverage: [boundary, equivalence_class]
+    standard_ref: "IEC 60880 §6.3"
+    step_template: |
+      1. 将 {n} 路输入全部置为 0，观察 {output_tag}
+      2. 将第 1 路输入置为 1，其余保持 0，观察 {output_tag}
+      3. 将第 n 路输入置为 1，其余保持 0，观察 {output_tag}
+      4. 将全部 {n} 路输入置为 1，观察 {output_tag}
+    expected_template: "见真值推演结果（步骤 1/2/3 期望 0；步骤 4 期望 1）"
+    evidence_hint: "节点 {block_id}、输入端口 {in_ports}、输出端口 {out_port}、IR 页号与包围盒"
+    safety_notes: "AND 常用于“多条件同时满足才动作”的联锁，漏测单输入置 0 会导致拒动风险不可见。"
+
+  - case_id: BOOL-AND-002
+    cls: AND
+    domain: BOOLEAN
+    applies_when:
+      params: {}
+      ports: {in: {min: 3, max: null}, out: {min: 1, max: 1}}
+      stateful: false
+    principle: "逐输入单点敏感度：单独翻转任一路输入，输出必须跟随翻转（多输入时不存在“冗余屏蔽”）"
+    generation: enumeration
+    coverage: [boundary, fault_tolerance]
+    standard_ref: "IEC 60880 §6.3 / IEEE 1012 §5.4（测试充分性）"
+    step_template: |
+      1. 基线：{n} 路输入全为 1，确认 {output_tag} 为 1
+      2. 对 i = 1..{n}：仅将第 i 路置 0，观察 {output_tag}
+      3. 每步后恢复第 i 路为 1，确认输出回到 1
+    expected_template: "见真值推演结果（步骤 2 每步期望 0；步骤 3 每步期望 1）"
+    evidence_hint: "输入端口逐一路由、节点 {block_id} 的拓扑位置"
+    safety_notes: "该模板用于发现“某路输入实际未接入”的组态错误——图形连接正确但语义端口错位时，本用例可暴露。"

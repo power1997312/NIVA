@@ -1,0 +1,42 @@
+# =====================================================================
+# 定值清单 · TSA 系统 · v0.1 【占位夹具】
+# ★ 纪律：本文件为演示/测试用占位定值（assume:true），
+#   真实定值手册接入时整文件替换，rev 与受控文件号必须如实填写。
+# 绑定键：(tag_key=被测信号规范化键, block=块语义类[, branch=分支级别])
+#   tag_key 由位号文法+归一规则产生（YTSM007MP / MP007 → MP007）
+#   block 取图符字典语义类：HI_MONITOR(H/) / LO_MONITOR(/L)
+# =====================================================================
+version: "0.1"
+source_doc:
+  title: "(占位)TSA 系统报警定值手册"
+  rev: "A-draft"
+  assume: true
+
+setpoints:
+  - tag_key: MP007
+    block: HI_MONITOR
+    branch: H1
+    value: 8.5
+    unit: MPa
+    src: "占位样例行（演示绑定与溯源）"
+
+  - tag_key: MP015
+    block: HI_MONITOR
+    branch: H1
+    value: 30.0          # ★故意超出 MP015 的 IO 量程 0–25MPa，用于演示 R13 检出
+    unit: MPa
+    src: "占位样例行（故意错误值，验证 R13）"
+
+  - tag_key: MP014
+    block: LO_MONITOR
+    value: 2.0           # 无 branch 键 = 该块任意分支共用（低报单分支）
+    unit: MPa
+    src: "占位样例行（无分支限定示例）"
+
+  - xu_tag: 412XU1       # 按报警开关位号登记的惯例（双键索引的另一侧）
+    measured_tag: MP007  # 声明被测信号 → R13 用它的 IO 量程做交叉校验
+    block: HI_MONITOR
+    branch: H1
+    value: 8.5
+    unit: MPa
+    src: "占位样例行（演示 XU 键命中与定值注入）"

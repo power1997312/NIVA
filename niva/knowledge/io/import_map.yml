@@ -1,0 +1,25 @@
+# =====================================================================
+# IO清单导入列映射 · v0.1
+# 不同设计院模板列名不同：导入器按本映射的别名表模糊匹配列。
+# 规范字段（canonical）：tag 必填；其余可选，缺省走 defaults.yml 继承链。
+# =====================================================================
+version: "0.1"
+columns:
+  tag:
+    required: true
+    aliases: ["KKS_TAG", "位号", "TAG", "KKS", "点号", "测点编号"]
+  desc:
+    required: false
+    aliases: ["描述", "说明", "DESC", "DESCRIPTION", "名称", "测点名称"]
+  unit:
+    required: false
+    aliases: ["单位", "UNIT", "工程单位"]
+  range_min:
+    required: false
+    aliases: ["量程下限", "下限", "RANGE_MIN", "量程低限"]
+  range_max:
+    required: false
+    aliases: ["量程上限", "上限", "RANGE_MAX", "量程高限"]
+  signal_type:
+    required: false
+    aliases: ["信号类型", "类型", "SIGNAL_TYPE", "信号种类"]

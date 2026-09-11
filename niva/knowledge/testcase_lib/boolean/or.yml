@@ -1,0 +1,46 @@
+# =====================================================================
+# 部件测试用例模板 · 布尔域 · OR（或门）
+# =====================================================================
+schema_version: "1.0"
+lib_version: "0.1.0"
+updated: "2026-09-10"
+source_note: "cls 取自 knowledge/symbols/boolean.yml（OR, in.min=2）"
+
+cases:
+  - case_id: BOOL-OR-001
+    cls: OR
+    domain: BOOLEAN
+    applies_when:
+      params: {}
+      ports: {in: {min: 2, max: null}, out: {min: 1, max: 1}}
+      stateful: false
+    principle: "任一输入为 1 即输出 1；全 0 才输出 0"
+    generation: enumeration
+    coverage: [boundary, equivalence_class]
+    standard_ref: "IEC 60880 §6.3"
+    step_template: |
+      1. 将 {n} 路输入全部置为 0，观察 {output_tag}
+      2. 对 i = 1..{n}：仅将第 i 路置 1，其余为 0，观察 {output_tag}
+      3. 将全部 {n} 路输入置为 1，观察 {output_tag}
+    expected_template: "见真值推演结果（步骤 1 期望 0；步骤 2/3 每步期望 1）"
+    evidence_hint: "节点 {block_id}、输入端口 {in_ports}、输出端口 {out_port}"
+    safety_notes: "OR 在保护逻辑中常承担“多参数任一越限即动作”，漏测任一路会导致保护功能缺失不可检出。"
+
+  - case_id: BOOL-OR-002
+    cls: OR
+    domain: BOOLEAN
+    applies_when:
+      params: {}
+      ports: {in: {min: 2, max: null}, out: {min: 1, max: 1}}
+      stateful: false
+    principle: "全 0 输出 0 反例验证：排除“输入悬空被默认置 1”导致的常动（误动）风险"
+    generation: enumeration
+    coverage: [boundary, invalid_input]
+    standard_ref: "IEC 60880 §6.3 / HAD 102/02（防止误动）"
+    step_template: |
+      1. 逐一确认 {n} 路输入均为确定的 0 状态（记录每路取值来源）
+      2. 观察 {output_tag} 是否稳定为 0
+      3. 保持 30 秒以上再次观察 {output_tag}，确认无抖动
+    expected_template: "见真值推演结果（期望恒为 0，无抖动）"
+    evidence_hint: "各输入端口取值来源、节点 {block_id} 的端口极性标记（signed/sign）"
+    safety_notes: "若上游为模拟量经阈值块转换而来，需同时核查阈值块极性（p4_semantics 的 Δ 符号），否则“0 状态”不成立。"

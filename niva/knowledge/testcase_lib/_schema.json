@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "niva/testcase_lib/_schema.json",
+  "title": "NIVA 部件测试用例模板库 Schema",
+  "description": "块类型 → 参数化测试模板的映射契约（架构方案 §5.2.3）。纪律：模板只声明『测试原则、槽位、步骤骨架、覆盖方法、标准出处』，绝不含具体数值——数值一律来自真值推演与定值库，从机制上杜绝 LLM 编造判据。",
+  "type": "object",
+  "required": ["schema_version", "lib_version", "cases"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "type": "string" },
+    "lib_version": { "type": "string" },
+    "updated": { "type": "string" },
+    "source_note": { "type": "string" },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/case" }
+    }
+  },
+  "definitions": {
+    "case": {
+      "type": "object",
+      "required": [
+        "case_id", "cls", "domain", "applies_when", "principle",
+        "generation", "coverage", "standard_ref", "step_template"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "pattern": "^[A-Z]{2,6}-[A-Z0-9_]{2,12}-[0-9]{3}$",
+          "description": "形如 BOOL-VOTE_KN-001。同一 cls 可有多条模板，序号递增。"
+        },
+        "cls": {
+          "type": "string",
+          "description": "必须命中 knowledge/symbols/*.yml 的 entries[].cls 之一（由 validate_testcase_lib.py 强制校验，禁止臆造类名）。"
+        },
+        "domain": {
+          "type": "string",
+          "enum": ["BOOLEAN", "ANALOG", "MIXED", "IO", "INTERFACE"]
+        },
+        "applies_when": {
+          "type": "object",
+          "required": ["ports"],
+          "description": "结构化匹配条件（刻意不用自然语言，降低编写门槛并保证可程序化判定）。",
+          "properties": {
+            "params": {
+              "type": "object",
+              "description": "参数族约束。键为参数名，值为 '*'（任意）或 {min,max,enum} 约束对象。"
+            },
+            "ports": {
+              "type": "object",
+              "description": "端口签名约束：in/out 各自的 {min,max}。用于硬冲突一票否决。"
+            },
+            "stateful": {
+              "type": ["boolean", "null"],
+              "description": "是否要求含状态元件。null 表示不约束。"
+            }
+          }
+        },
+        "principle": {
+          "type": "string",
+          "description": "测试原则（一句话工程含义），可含 {param} 槽位。不含具体数值。"
+        },
+        "generation": {
+          "type": "string",
+          "enum": ["enumeration", "sampling", "template", "interval"],
+          "description": "期望值生成方式。enumeration=布尔域全枚举；interval=模拟域区间传播；sampling=等价类抽样；template=纯模板无推演。"
+        },
+        "coverage": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["boundary", "equivalence_class", "fault_tolerance", "single_failure",
+                     "independence", "bypass", "rate_limit", "invalid_input", "state_transition"]
+          }
+        },
+        "standard_ref": {
+          "type": "string",
+          "description": "标准出处。只引用条款号与通用要求，不复制标准原文（版权纪律）。"
+        },
+        "step_template": {
+          "type": "string",
+          "description": "步骤骨架，含 {槽位}。步骤顺序与数量由算法固定，LLM 不得增删。"
+        },
+        "expected_template": {
+          "type": "string",
+          "description": "期望值模板。若 generation 为 enumeration/interval，应写『见真值推演结果』——禁止在此写死数值。"
+        },
+        "evidence_hint": {
+          "type": "string",
+          "description": "该用例应携带哪些证据（节点/端口/定值来源），供 R20 校验说明的证据完备性。"
+        },
+        "safety_notes": {
+          "type": "string",
+          "description": "核安全相关注意事项（如单一故障准则、通道独立性）。"
+        }
+      }
+    }
+  }
+}

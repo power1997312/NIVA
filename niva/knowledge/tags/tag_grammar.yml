@@ -1,0 +1,64 @@
+# =====================================================================
+# 位号文法（核电仪控 SAMA 图）· v0.1
+# 实证来源：[非密]TSA调节 SAMA.pdf 五页文本层标签语料（out/knowledge_label_corpus.json）
+#           + K3 阈值绑定实测（411XU1.L / 412XU2.H1 等）
+# 定位：知识层的统一绑定枢纽——IO 清单、定值手册都以本文法解析出的规范化键挂接。
+# 变更纪律：新增模式须附样本出处；修改既有模式视同绑定键变更，需回归 kb_tag 测试。
+# =====================================================================
+version: "0.1"
+updated: "2026-08-25"
+
+# ---- 信号字母码（KKS 风格尾缀/中缀，按样本实证）----
+signal_codes:
+  MP: {meaning: 压力(主), examples: ["YTSM007MP", "MP007"]}
+  M:  {meaning: 压力(短变体), examples: ["010M"]}
+  GS: {meaning: 差压/液位类(待核), examples: []}
+
+# ---- 阈值监控分支报警级别（K3 branch_labels 的语义表）----
+branch_labels:
+  L:  {meaning: 低报, severity: 预警}
+  L2: {meaning: 低2报, severity: 保护前兆}
+  H1: {meaning: 高1报警, severity: 预警}
+  H2: {meaning: 高2报警, severity: 保护前兆}
+
+# ---- 解析模式（按优先级排列；named group 即输出字段）----
+patterns:
+  # 跨页引用：SH/FDSH/图集前缀 . 页_序 （页号是跨页闭合判定的键）
+  - id: sh_ref
+    regex: '(?:SH|FDSH|TSASAMA|TSMSAMA)\.(\d+)_(\d+)'
+    fields: {page: 1, seq: 2}
+    produces: offpage_in
+
+  # 报警扇出目标引用：RRP FD SH页（无下划线，区别于页内 SH.x_x）
+  - id: rrp_ref
+    regex: 'RRP FD SH(\d+)'
+    fields: {page: 1}
+    produces: offpage_out
+
+  # 阈值监控位号：区域号 + XU + 通道号，可带分支级别（412XU2.H1）
+  - id: xu_threshold
+    regex: '([A-Z]?\d{1,4})XU(\d)(?:\.([LH]\d?))?'
+    fields: {area: 1, channel: 2, branch: 3}
+    produces: xu_threshold
+
+  # 通用回路位号：字母前缀 + 数字序 + 字母尾缀（YTSM007MP / MP007 / OOMC017）
+  - id: loop_tag
+    regex: '^([A-Z]{1,6})(\d{2,4})([A-Z]{0,4})$'
+    fields: {system: 1, seq: 2, signal_suffix: 3}
+    produces: loop_tag
+
+  # 数字泡：跨页接口序号（视图A 的 "→ 跨页N" 目标）
+  - id: digit_interface
+    regex: '^(\d{1,2})$'
+    fields: {seq_no: 1}
+    produces: digit_interface
+
+# ---- 规范化规则 ----
+normalize:
+  upper: true            # 统一大写
+  strip_spaces: true
+  # 同一测点的长短两种画法归一（导入器亦可为 IO 条目自动生成候选别名）
+  alias_hint: "短形=尾缀字母码+序号（如 YTSM007MP ↔ MP007）"
+
+# ---- 复合单元格拆分（merge_stacked 用 "|" 保形）----
+composite_split: "|"

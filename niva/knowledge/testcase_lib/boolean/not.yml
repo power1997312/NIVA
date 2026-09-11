@@ -1,0 +1,44 @@
+# =====================================================================
+# 部件测试用例模板 · 布尔域 · NOT（非门）
+# =====================================================================
+schema_version: "1.0"
+lib_version: "0.1.0"
+updated: "2026-09-10"
+source_note: "cls 取自 knowledge/symbols/boolean.yml（NOT, in 1..1）。注：图上常以 `1`+o 标注，由 L2 检出器扩展识别。"
+
+cases:
+  - case_id: BOOL-NOT-001
+    cls: NOT
+    domain: BOOLEAN
+    applies_when:
+      params: {}
+      ports: {in: {min: 1, max: 1}, out: {min: 1, max: 1}}
+      stateful: false
+    principle: "输出恒为输入的取反；两点验证即可完全覆盖单输入布尔函数的全部输入空间"
+    generation: enumeration
+    coverage: [equivalence_class]
+    standard_ref: "IEC 60880 §6.3"
+    step_template: |
+      1. 将输入置为 0，观察 {output_tag}
+      2. 将输入置为 1，观察 {output_tag}
+    expected_template: "见真值推演结果（步骤 1 期望 1；步骤 2 期望 0）"
+    evidence_hint: "节点 {block_id}、输入端口 {in_port}、输出端口 {out_port}"
+    safety_notes: "NOT 的单输入布尔函数仅 2 个等价类，全枚举即 100% 覆盖，不存在抽样问题——如引擎对该类走了抽样，属过度设计。"
+
+  - case_id: BOOL-NOT-002
+    cls: NOT
+    domain: BOOLEAN
+    applies_when:
+      params: {}
+      ports: {in: {min: 1, max: 1}, out: {min: 1, max: 1}}
+      stateful: false
+    principle: "级联取反显式化：若 NOT 与下游取反块级联等价于直通，需在用例中显式记录以免被判为冗余组态误删"
+    generation: template
+    coverage: [equivalence_class]
+    standard_ref: "NBT 20448（设计意图可追溯性）"
+    step_template: |
+      1. 记录本块 {block_id} 与下游取反块 {downstream_block} 的级联关系
+      2. 施加输入 0 与 1，观察最终输出与直通预期的差异
+    expected_template: "见真值推演结果（级联后与直通等价，最终输出等于输入）"
+    evidence_hint: "本块与下游块的节点 ID、两者间的边依据（basis）、IR 页号"
+    safety_notes: "两次取反在功能上冗余，但在某些设计中用于**信号极性显式声明**。本用例只记录不判定，是否删减由设计方决策——工具不得自行“优化”组态。"

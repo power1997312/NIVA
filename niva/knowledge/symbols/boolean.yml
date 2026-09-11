@@ -1,0 +1,61 @@
+# =====================================================================
+# SAMA 图符字典 · 布尔量域 (BOOLEAN)
+# 字段约定见 analog.yml 头注
+# =====================================================================
+version: "1.0.0"
+updated: "2026-08-25"
+entries:
+  - cls: AND
+    pat: '^&$|^AND$|^与$'
+    in: {domain: B, min: 2, max: null}
+    out: B
+    exec: "OUT := AND(IN[*])"
+    aliases: ["&", "与门"]
+    standard_ref: "SAMA 与门"
+
+  - cls: OR
+    pat: '^≥1$|^OR$|^或$'
+    in: {domain: B, min: 2, max: null}
+    out: B
+    exec: "OUT := OR(IN[*])"
+    aliases: ["≥1", "或门"]
+    standard_ref: "SAMA 或门"
+
+  - cls: XOR
+    pat: '^=1$|^XOR$|^异或$'
+    in: {domain: B, min: 2, max: 2}
+    out: B
+    exec: "OUT := IN1 ⊕ IN2"
+    aliases: ["=1", "异或"]
+    standard_ref: "SAMA 异或"
+
+  - cls: NOT
+    pat: '^NOT$|^非$'
+    in: {domain: B, min: 1, max: 1}
+    out: B
+    exec: "OUT := NOT(IN)"
+    standard_ref: "SAMA 非门（图上标签为 `1`+o，L2 检出器扩展用）"
+
+  - cls: VOTE_KN
+    pat: '^(\d)oo(\d)$|^≥(\d)/(\d)$|^(\d)/(\d)$|^VOTE$'
+    in: {domain: B, min: 2, max: null}
+    out: B
+    exec: "OUT := (ΣIN ≥ k)"
+    param: kn
+    aliases: ["2oo3", "2/4", "≥2/4"]
+    standard_ref: "k/n 表决；参数 k/n 须与实际触线数一致（免费校验 C2 特例）"
+
+  - cls: SR
+    pat: '^SR$|^SET_RST$'
+    in: {domain: B, min: 2, max: 2}
+    out: B
+    exec: "Q := (S OR Q) AND NOT R"
+    stateful: true
+    standard_ref: "SR 触发器（第二个状态元件，断环点）"
+
+  - cls: RESET
+    pat: '^RESET$|^RST$|^复位$'
+    in: {domain: B, min: 1, max: 2}
+    out: B
+    exec: "latch reset"
+    standard_ref: "复位（样本 P5 实证：RESET/T/403CC 混合域）"

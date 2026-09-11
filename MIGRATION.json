@@ -1,0 +1,73 @@
+{
+  "generated_by": "tools/migrate_legacy.py",
+  "niva_root": "E:\\V&V Agents\\NIVA",
+  "policy": "原样迁入（strangler）：业务代码零修改，仅复制与记账",
+  "adapters": [
+    {
+      "adapter": "doc",
+      "note": "需求文档追溯引擎（解析/提取/发现/匹配/裁决/报告）",
+      "source_path": "E:\\Trace_NL",
+      "dest_path": "E:\\V&V Agents\\NIVA\\niva\\adapters\\doc\\legacy",
+      "git_head": "3c10cbec7cac17b9d08f1e9115d5fbbe3d87b931",
+      "git_last_commit": "3c10cbec7cac17b9d08f1e9115d5fbbe3d87b931|2026-09-10|feat: 新增候选追踪发现层与 LLM 裁决器，工程文档移出版本控制",
+      "dirty_entries_at_migration": 43,
+      "file_count": 412,
+      "total_bytes": 638713069,
+      "content_sha256": "1753a04568f5ae2921a1ab2876bba02d34a29e715dcf2b9d932588e3881f97fd",
+      "excluded_dirs": [
+        ".eggs",
+        ".git",
+        ".idea",
+        ".ipynb_checkpoints",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".ruff_cache",
+        ".venv",
+        ".vscode",
+        "__pycache__",
+        "build",
+        "dist",
+        "env",
+        "node_modules",
+        "venv"
+      ],
+      "migrated_at": "2026-09-10T19:27:41+08:00",
+      "dry_run": false,
+      "copied_files": 412,
+      "stale_files": []
+    },
+    {
+      "adapter": "diagram",
+      "note": "工程图纸解析引擎（矢量解析/联网/方向裁决/IR/知识绑定）",
+      "source_path": "E:\\SAMA-V1",
+      "dest_path": "E:\\V&V Agents\\NIVA\\niva\\adapters\\diagram\\legacy",
+      "git_head": "043b2e5173bad27f19958685074ff14c8b3b05e6",
+      "git_last_commit": "043b2e5173bad27f19958685074ff14c8b3b05e6|2026-09-01|docs: 移除已被 code-wiki 取代的旧版实施总结文档并更新忽略规则",
+      "dirty_entries_at_migration": 10,
+      "file_count": 266,
+      "total_bytes": 14192685,
+      "content_sha256": "850a4cd991eb17ffff87da754666776a573b2e92950f9307ce5560a0e977034c",
+      "excluded_dirs": [
+        ".eggs",
+        ".git",
+        ".idea",
+        ".ipynb_checkpoints",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".ruff_cache",
+        ".venv",
+        ".vscode",
+        "__pycache__",
+        "build",
+        "dist",
+        "env",
+        "node_modules",
+        "venv"
+      ],
+      "migrated_at": "2026-09-10T19:27:42+08:00",
+      "dry_run": false,
+      "copied_files": 266,
+      "stale_files": []
+    }
+  ]
+}

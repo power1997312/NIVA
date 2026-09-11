@@ -1,0 +1,32 @@
+# =====================================================================
+# 缺省值清单 · v0.1（属性继承链的兜底两级）
+# 解析顺序：IO清单逐项值 > by_signal_code(按位号尾缀信号码) > global
+# ★ 纪律：本文件当前为占位缺省（无真实IO交付物前的工程假设），
+#   所有数值均标注 assume:true；真实IO清单导入后逐项覆盖并消解 assume 标记。
+# =====================================================================
+version: "0.1"
+updated: "2026-08-25"
+
+global:
+  attrs:
+    signal_type: 模拟量
+    electrical: "4-20mA"          # 核电仪控模拟量输入惯例
+    unit: null                    # 未知必须显式为 null，禁止猜
+    range: null
+
+by_signal_code:
+  # 键 = 位号文法 loop_tag 的 signal_suffix / xu 的语义类别
+  MP:
+    meaning: 压力
+    attrs: {unit: MPa, range: [0, 10]}
+    assume: true                  # 占位：主蒸汽压力典型量程，待真实IO清单校准
+  GS:
+    meaning: 差压/液位(待核)
+    attrs: {unit: kPa, range: [0, 100]}
+    assume: true
+
+by_channel_kind:
+  # 阈值监控通道（XU）的属性骨架：定值在 setpoints/，这里只定类型
+  XU:
+    meaning: 阈值监控开关量输出
+    attrs: {signal_type: 开关量}
