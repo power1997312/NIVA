@@ -1,4 +1,4 @@
-# NIVA — 核电仪控智能验证与追溯智能体
+# NIVA — 仪控智能验证与追溯智能体
 
 > **N**uclear **I**&C **V**erification **A**gent
 > 把 `E:\Trace_NL`（需求文档追溯验证）与 `E:\SAMA-V1`（工程图纸解析与追溯）
